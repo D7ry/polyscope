@@ -36,6 +36,51 @@ void initializeRenderEngine_glfw() {
 GLEngineGLFW::GLEngineGLFW() {}
 GLEngineGLFW::~GLEngineGLFW() {}
 
+
+// in CLI pop up a monitor selection interface, that lists
+// monitor names and properties
+// the user would input a number to select the right monitor.
+GLFWmonitor* cliMonitorSelection() {
+    const char* line = nullptr;
+    line = "---------- Please Select Monitor Index ----------"; // lol
+    std::cout << line << std::endl;
+    int numMonitors;
+    GLFWmonitor** monitors = glfwGetMonitors(&numMonitors);
+    // print out monitor details
+    for (int monitorIdx = 0; monitorIdx < numMonitors; monitorIdx++) {
+        GLFWmonitor* monitor = monitors[monitorIdx];
+        const char* name = glfwGetMonitorName(monitor);
+        const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+        printf("%i : %s %i x %i %i", 
+            monitorIdx,
+            name,
+            mode->width,
+            mode->height,
+            mode->refreshRate
+        );
+    }
+    line = "-------------------------------------------------";
+    std::cout << line << std::endl;
+    // scan user input for monitor idx and choose monitor
+    int monitorIdx = 0;
+    do {
+        std::string input;
+        getline(std::cin, input);
+        char* endPtr;
+        monitorIdx = strtol(input.c_str(), &endPtr, 10);
+        if (endPtr) { // conversion success
+            if (monitorIdx < numMonitors) {
+                break;
+            } else {
+                std::cout << "Monitor index out of range!" << std::endl;
+            }
+        } else {
+            std::cout << "Please input a valid integer number!" << std::endl;
+        }
+    } while (1);
+    return monitors[monitorIdx];
+}
+
 void GLEngineGLFW::initialize() {
 
   // Small callback function for GLFW errors
@@ -62,7 +107,23 @@ void GLEngineGLFW::initialize() {
   // Create the window with context
   glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
   glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
-  mainWindow = glfwCreateWindow(view::windowWidth, view::windowHeight, options::programName.c_str(), NULL, NULL);
+  
+  auto monitor = glfwGetPrimaryMonitor();
+
+  const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+  glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+  glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+  glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+  glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+  auto width = mode->width;
+  auto height = mode->height;
+  mainWindow = glfwCreateWindow(
+      width, 
+      height, 
+      options::programName.c_str(), 
+      glfwGetPrimaryMonitor(), 
+      NULL
+  );
   glfwMakeContextCurrent(mainWindow);
   glfwSetWindowPos(mainWindow, view::initWindowPosX, view::initWindowPosY);
 
